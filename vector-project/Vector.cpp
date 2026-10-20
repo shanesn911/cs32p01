@@ -385,6 +385,12 @@ void Vector<T>::insert(std::size_t index, const T& value) {
         std::size_t new_cap = std::max(cap + 1, next_cap);
         reallocate(new_cap);
     }
+    for (std::size_t i = sz; i > index; --i) {
+        begin_[i] = std::move(begin_[i - 1]);
+    }
+    begin_[index] = std::move(val_copy);
+    ++end_;
+
 
 }
 
