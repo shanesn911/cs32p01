@@ -17,6 +17,7 @@
 #define VECTOR_CPP
 
 #include "Vector.h"
+#include <algorithm>
 
 // ---- Constructors and the Big 3 ----
 
@@ -151,7 +152,25 @@ Vector<T>::~Vector() {
 template <typename T>
 void Vector<T>::reallocate(std::size_t new_cap) {
     // TODO
-    throw std::logic_error("reallocate() not implemented");
+    std::size_t sz = size();
+    if (new_cap < sz) {
+        new_cap = sz;
+    }
+    if (new_cap == 0) {
+        delete[] begin_;
+        begin_ = nullptr;
+        end_ = nullptr;
+        end_cap_ = nullptr;
+        return;
+    }
+    T* new_data = new T[new_cap];
+    for (std::size_t i = 0; i < sz; ++i) {
+        new_data[i] = std::move(begin_[i]);
+    }
+    delete[] begin_;
+    begin_ = new_data;
+    end_ = begin_ + sz;
+    end_cap_ = begin_ + new_cap;
 }
 
 // ---- Element access ----
@@ -273,7 +292,8 @@ bool Vector<T>::empty() const {
 template <typename T>
 void Vector<T>::reserve(std::size_t n) {
     // TODO
-    throw std::logic_error("reserve() not implemented");
+    if (n > capacity())
+        reallocate(n);
 }
 
 // Shrinks the buffer so capacity() == size(), keeping the elements.
@@ -282,7 +302,8 @@ void Vector<T>::reserve(std::size_t n) {
 template <typename T>
 void Vector<T>::shrink_to_fit() {
     // TODO
-    throw std::logic_error("shrink_to_fit() not implemented");
+    if(capacity() > size()) 
+        reallocate(size());
 }
 
 // ---- Modifiers ----
@@ -295,7 +316,14 @@ void Vector<T>::shrink_to_fit() {
 template <typename T>
 void Vector<T>::push_back(const T& value) {
     // TODO
-    throw std::logic_error("push_back() not implemented");
+    T val_copy = value;
+    if (end_ == end_cap_) {
+        std::size_t cap = capacity();
+        std::size_t next_cap = (std::size_t)(cap * growth_factor);
+        std::size_t new_cap = std::max(cap + 1, next_cap);
+        reallocate(new_cap);
+    }
+    *end_++ = std::move(val_copy);
 }
 
 // Removes the last element. Capacity is unchanged and nothing is freed.
@@ -303,7 +331,9 @@ void Vector<T>::push_back(const T& value) {
 template <typename T>
 void Vector<T>::pop_back() {
     // TODO
-    throw std::logic_error("pop_back() not implemented");
+    if(empty())
+        throw std::out_of_range("Vector is empty");
+    --end_;
 }
 
 // Removes all elements: size becomes 0. Capacity is unchanged and nothing is
@@ -311,7 +341,7 @@ void Vector<T>::pop_back() {
 template <typename T>
 void Vector<T>::clear() {
     // TODO
-    throw std::logic_error("clear() not implemented");
+    end_ = begin_;
 }
 
 // Changes the size to n.
@@ -322,7 +352,17 @@ void Vector<T>::clear() {
 template <typename T>
 void Vector<T>::resize(std::size_t n) {
     // TODO
-    throw std::logic_error("resize() not implemented");
+    std::size_t sz = size();
+    if (n < sz) {
+        end_ = begin_ + n;
+    } else if ( n > sz) {
+        if (n > capacity())
+            reallocate(n);
+        for(std::size_t i = sz; i < n; ++i)
+            begin_[i] = T();
+        end_ = begin_ + n;
+    } 
+    
 }
 
 // Inserts a copy of value at position index, so that afterwards v[index] is
@@ -334,7 +374,18 @@ void Vector<T>::resize(std::size_t n) {
 template <typename T>
 void Vector<T>::insert(std::size_t index, const T& value) {
     // TODO
-    throw std::logic_error("insert() not implemented");
+    std::size_t sz = size();
+    if (index > sz) {
+        throw std::out_of_range("Index out of range");
+    }
+    T val_copy = value;
+    if (end_ == end_cap_) {
+        std::size_t cap = capacity();
+        std::size_t next_cap = (std::size_t)(cap * growth_factor); 
+        std::size_t new_cap = std::max(cap + 1, next_cap);
+        reallocate(new_cap);
+    }
+
 }
 
 // Removes the element at index, shifting the elements after it one position
@@ -343,7 +394,15 @@ void Vector<T>::insert(std::size_t index, const T& value) {
 template <typename T>
 void Vector<T>::erase(std::size_t index) {
     // TODO
-    throw std::logic_error("erase() not implemented");
+    std::size_t sz = size();
+    if (index >= sz) {
+        throw std::out_of_range("Index out of range");
+    }
+    for (std::size_t i = index; i < sz - 1; ++i) {
+        begin_[i] = std::move(begin_[i + 1]);
+    }
+    --end_;
+
 }
 
 // ---- Non-member operators ----
@@ -353,14 +412,22 @@ void Vector<T>::erase(std::size_t index) {
 template <typename T>
 bool operator==(const Vector<T>& a, const Vector<T>& b) {
     // TODO
-    throw std::logic_error("operator== not implemented");
+    if (a.size() != b.size()) 
+        return false;
+
+    for (std::size_t i = 0; i < a.size(); ++i) {
+        if (!(a[i] == b[i])) 
+            return false;   
+    }
+    return true;
+
 }
 
 // Returns true if a and b are not equal (hint: use operator==).
 template <typename T>
 bool operator!=(const Vector<T>& a, const Vector<T>& b) {
     // TODO
-    throw std::logic_error("operator!= not implemented");
+    return !(a == b);
 }
 
 #endif
